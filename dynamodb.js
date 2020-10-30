@@ -1,4 +1,5 @@
 const aws = require('aws-sdk')
+const s3 = require('./s3.js')
 const table_name = "Products"
 
 //Cấu Hình DynamoDB
@@ -31,16 +32,84 @@ function ThemSanPham(data ,callback){
     let params = {
         TableName: table_name,
         Item:{
-            id: data.id,
+            id: Number(data.id),
             name: data.name,
             price: data.price,
             img_src_name: data.img_src_name
         }
     }
 
+    let image = {
+        name: data.img_src_name,
+        data: data.img_data,
+    }
+
     docClient.put(params, (error)=>{
         if(!error){
-            callback(true)
+            s3.UploadData(image, (status)=>{
+                if(status){
+                    callback(true)
+                }else{
+                    callback(false)
+                }
+            })
+        }else{
+            callback(false)
+        }
+    })
+}
+
+//Lấy 1 Sản Phẩm
+function Get_a_SanPham(data, callback){
+    let params = {
+        TableName: table_name,
+        Key:{
+            id: Number(data.id),
+            name: String(data.name)
+        }
+    }
+
+    docClient.get(params, (error, data)=>{
+        if(!error && Object.keys(data).length > 0){
+            callback(true, data)
+        }else{
+            callback(false, null)
+        }
+    })
+}
+
+//Xoá Sản Phẩm
+function XoaSanPham(data, callback){
+    let params = {
+        TableName: table_name,
+        Key:{
+            id: Number(data.id),
+            name: String(data.name)
+        }
+    }
+
+    Get_a_SanPham(data, (err, res)=>{
+        if(res){
+            let image = {
+                name: res.Item.img_src_name
+            }
+
+            //Xoá Hình Ảnh Trên S3
+            s3.DeleteFile(image, (status)=>{
+                console.log(status)
+                if(status){
+                    //Xoá Dữ Liệu DynamoDB
+                    docClient.delete(params, (error)=>{
+                        if(!error){
+                            callback(true)
+                        }else{
+                            callback(false)
+                        }
+                    })
+                }else{
+                    callback(false)
+                }
+            })
         }else{
             callback(false)
         }
@@ -48,5 +117,5 @@ function ThemSanPham(data ,callback){
 }
 
 module.exports = {
-    GetAllSanPham, ThemSanPham
+    GetAllSanPham, ThemSanPham, XoaSanPham
 }

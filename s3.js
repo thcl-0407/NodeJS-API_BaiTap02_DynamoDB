@@ -16,15 +16,38 @@ function UploadData(image, callback){
         Body: image.data
       }
     
-    s3Client.upload(params, (error)=>{
-        if(!error){
+    s3Client.upload(params, (error, data)=>{
+        if(error){
             callback(false)
         }else{
-            callback(true)
+            if(data){
+                callback(true)
+            }else{
+                callback(false)
+            }
+        }
+    })
+}
+
+function DeleteFile(image, callback){
+    let params = {
+        Bucket: bucket_name,
+        Key: image.name,
+    }
+
+    s3Client.deleteObject(params, (error, data)=>{
+        if(error){
+            callback(false)
+        }else{
+            if(data){
+                callback(true)
+            }else{
+                callback(false)
+            }
         }
     })
 }
 
 module.exports = {
-    UploadData
+    UploadData, DeleteFile
 }

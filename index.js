@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const multer = require('multer')
 const dynamoDB = require('./dynamodb.js')
+const { ThemSanPham, XoaSanPham } = require('./dynamodb.js')
 const app = express()
 const upload = multer()
 
@@ -11,7 +12,7 @@ app.use(bodyParser.json())
 app.get('/', (req, res)=>{
     dynamoDB.GetAllSanPham((error, data)=>{
         if(error){
-            res.send(da2ta)
+            res.send(data)
         }
     })
 })
@@ -26,7 +27,41 @@ app.post('/add', upload.single('image'), (req, res)=>{
         img_data: req.file.buffer
     }
 
-    console.log(data)
+    ThemSanPham(data, (result)=>{
+        if(result){
+            res.send({
+                success: 1,
+                messeage: "Thêm Thành Công"
+            })
+        }else{
+            res.send({
+                success: 0,
+                messeage: "Có Lỗi Xảy Ra"
+            })
+        }
+    })
+})
+
+//Xoá Sản Phẩm
+app.delete('/id=:id&name=:name', (req, res)=>{
+    let data = {
+        id: req.params.id,
+        name: req.params.name,
+    }
+
+    XoaSanPham(data, (result)=>{
+        if(result){
+            res.send({
+                success: 1,
+                messeage: "Xoá Thành Công"
+            })
+        }else{
+            res.send({
+                "success": 0,
+                "messeage": "Có Lỗi Xảy Ra"
+            })
+        }
+    })
 })
 
 app.listen(3000, ()=>{
